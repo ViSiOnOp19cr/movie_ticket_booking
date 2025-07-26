@@ -1,48 +1,43 @@
-import authService from '../services/AuthService';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express'
+import jwt from 'jsonwebtoken'
+import { JWT_SECRET } from '../lib/config'
 
-interface UserRequest extends Request {
-  userId: number;
+export const userMiddlewares = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const authHeader = req.headers.authorization;
+        
+        if (!authHeader) {
+            res.status(401).json({
+                message: 'Authorization header required'
+            });
+            return;
+        }
+
+        const token = authHeader.startsWith('Bearer ') 
+            ? authHeader.slice(7) 
+            : authHeader;
+
+        if (!token) {
+            res.status(401).json({
+                message: 'Token required'
+            });
+            return;
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+        
+        if (decoded && decoded.id) {
+            req.userId = decoded.id;
+            next();
+        } else {
+            res.status(403).json({
+                message: "Invalid token"
+            });
+        }
+    } catch (e) {
+        console.error('Auth middleware error:', e);
+        res.status(403).json({
+            message: "Invalid or expired token"
+        });
+    }
 }
-
-const authenticateToken = async (req:UserRequest, res:Response, next:NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; 
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access token required',
-        data: null,
-        timestamp: new Date().toISOString()
-      });
-    }
-    const decoded = authService.verifyToken(token);
-    
-    const user = await authService.getUserById(decoded.userId);
-    
-    req.userId = user;
-    
-    next();
-  } catch (error:any) {
-    if (error.message === 'Invalid token') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid or expired token',
-        data: null,
-        timestamp: new Date().toISOString()
-      });
-    }
-    console.error('Auth middleware error:', error);
-
-    res.status(401).json({
-      success: false,
-      message: 'Authentication failed',
-      data: null,
-      timestamp: new Date().toISOString()
-    });
-  }
-};
-
-export default authenticateToken;
