@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id         Int       @id    @default(autoincrement())
+  email      String    @unique
+  password   String 
+  name       String 
+  booking    Booking[]
+}
+model Movie{
+    id                Int   @id  @default(autoincrement())
+    movie_name        String
+    description       String 
+    durationMinutes   Int
+    genre             String?
+    rating            String? 
+    posterUrl         String?
+    releaseDate       DateTime?
+    showtimes         Showtime[] 
+}
+model Theater {
+  id              Int     @id     @default(autoincrement())
+  name            String 
+  city            String
+  totalseats      Int
+  seats           Seat[]
+  showtimes       Showtime[]
+}
+
+model Seat {
+  id         Int       @id @default(autoincrement())
+  theater    Theater   @relation(fields: [theaterId], references: [id], onDelete: Cascade)
+  theaterId  Int
+  seatNumber String
+  seatType   SeatType  @default(regular)
+  rowName    String
+  createdAt  DateTime  @default(now())
+
+  bookingSeats BookingSeat[]
+
+  @@unique([theaterId, seatNumber])
+}
+model Showtime {
+  id          Int       @id @default(autoincrement())
+  movie       Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId     Int
+  theater     Theater   @relation(fields: [theaterId], references: [id], onDelete: Cascade)
+  theaterId   Int
+  startTime   DateTime
+  endTime     DateTime
+  basePrice   Decimal
+  premiumPrice Decimal
+  vipPrice    Decimal
+  createdAt   DateTime  @default(now())
+
+  bookings     Booking[]
+  bookingSeats BookingSeat[]
+
+  @@unique([theaterId, startTime])
+  @@check(endTime > startTime)
+}
+model Booking {
+  id              Int            @id @default(autoincrement())
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          Int
+  showtime        Showtime       @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
+  showtimeId      Int
+  totalAmount     Decimal
+  bookingStatus   BookingStatus  @default(pending)
+  paymentStatus   PaymentStatus  @default(pending)
+  bookingReference String        @unique
+  createdAt       DateTime       @default(now())
+
+  bookingSeats    BookingSeat[]
+
+  @@check(totalAmount > 0)
+}
+model BookingSeat {
+  id          Int       @id @default(autoincrement())
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId   Int
+  seat        Seat      @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  seatId      Int
+  showtime    Showtime  @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
+  showtimeId  Int
+  pricePaid   Decimal
+  createdAt   DateTime  @default(now())
+
+  @@unique([seatId, showtimeId])
+  @@check(pricePaid > 0)
+}
+enum SeatType {
+  regular
+  premium
+  vip
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+}
