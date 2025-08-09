@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { JWT_SECRET } from '../lib/config'
+import { prisma } from '../lib/db';
 
 export const userMiddlewares = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -25,6 +26,11 @@ export const userMiddlewares = async (req: Request, res: Response, next: NextFun
         }
 
         const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+        const user = await prisma.user.findUnique({
+            where: {
+                id: decoded.id
+            }
+        });
         
         if (decoded && decoded.id) {
             req.userId = decoded.id;

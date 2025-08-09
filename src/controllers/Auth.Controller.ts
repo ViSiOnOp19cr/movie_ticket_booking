@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../lib/config';
 
-export const SignUp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const SignUp = async (req: Request, res: Response): Promise<void> => {
     try {
         const validateSignup = signupSchema.safeParse(req.body);
 
@@ -36,7 +36,8 @@ export const SignUp = async (req: Request, res: Response, next: NextFunction): P
             data:{
                 email: email,
                 password: hash,
-                name: name
+                name: name,
+                isAdmin: false
             }
         });
         
@@ -48,7 +49,7 @@ export const SignUp = async (req: Request, res: Response, next: NextFunction): P
     }
 }
 
-export const SignIn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const SignIn = async (req: Request, res: Response): Promise<void> => {
     try{
         const Loginvalidation = signinSchema.safeParse(req.body);
         if(!Loginvalidation.success){

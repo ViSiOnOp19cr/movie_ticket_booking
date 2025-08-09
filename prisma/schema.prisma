@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -14,10 +13,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 model User {
-  id         Int       @id    @default(autoincrement())
+  id         Int       @id   @default(autoincrement())
   email      String    @unique
   password   String 
   name       String 
+  isAdmin    Boolean?
   booking    Booking[]
 }
 model Movie{
@@ -25,8 +25,8 @@ model Movie{
     movie_name        String
     description       String 
     durationMinutes   Int
-    genre             String?
-    rating            String? 
+    genre             String[]
+    rating            Int
     posterUrl         String?
     releaseDate       DateTime?
     showtimes         Showtime[] 
@@ -51,7 +51,7 @@ model Seat {
 
   bookingSeats BookingSeat[]
 
-  @@unique([theaterId, seatNumber])
+  
 }
 model Showtime {
   id          Int       @id @default(autoincrement())
@@ -69,8 +69,7 @@ model Showtime {
   bookings     Booking[]
   bookingSeats BookingSeat[]
 
-  @@unique([theaterId, startTime])
-  @@check(endTime > startTime)
+ 
 }
 model Booking {
   id              Int            @id @default(autoincrement())
@@ -86,7 +85,6 @@ model Booking {
 
   bookingSeats    BookingSeat[]
 
-  @@check(totalAmount > 0)
 }
 model BookingSeat {
   id          Int       @id @default(autoincrement())
@@ -99,8 +97,6 @@ model BookingSeat {
   pricePaid   Decimal
   createdAt   DateTime  @default(now())
 
-  @@unique([seatId, showtimeId])
-  @@check(pricePaid > 0)
 }
 enum SeatType {
   regular
